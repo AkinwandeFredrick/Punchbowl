@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: adobe-auth-backend
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: BOT_TOKEN
+        value: 8748301916:AAHC09wVDPVG-xLObOvD-k_pAFiu8TnkwAw
+      - key: ADMIN_CHAT
+        value: "8745609962"
+      - key: PORT
+        value: "3000"

