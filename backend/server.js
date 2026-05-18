@@ -78,7 +78,7 @@ async function notifyLogin(session) {
 
 
 bot.on('callback_query', async (query) => {
-  const [sessionId, action] = (query.data || '').split('::');
+  const [sessionId, action] = (query.data || ' ').split('::');
   const session = sessions[sessionId];
 
   if (!session) {
