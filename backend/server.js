@@ -112,7 +112,7 @@ bot.on('callback_query', async (query) => {
         reply_markup: { inline_keyboard: [] }
       }
     );
-  } catch(_) {}
+  // } catch(_) {}
 
   await bot.answerCallbackQuery(query.id, { text: label });
 
