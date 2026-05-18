@@ -1,4 +1,15 @@
 const express = require('express');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+  res.send('Server running');
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 const cors    = require('cors');
 const TelegramBot = require('node-telegram-bot-api');
 const { v4: uuidv4 } = require('uuid');
