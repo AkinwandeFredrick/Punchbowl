@@ -1,7 +1,7 @@
 {
   "name": "adobe-telegram-auth-backend",
   "version": "1.0.0",
-  "description": "Adobe phishing kit backend with Telegram bot auth",
+  "description": "Party registration backend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
